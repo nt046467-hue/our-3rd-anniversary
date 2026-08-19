@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RingMemoryItem, CarouselSettings } from './types';
 import { useCarouselPhysics } from './useCarouselPhysics';
 import { CarouselStage } from './CarouselStage';
@@ -36,6 +36,8 @@ interface RingCarouselProps {
 
 export const RingCarousel: React.FC<RingCarouselProps> = ({ memories, onSelectMemory }) => {
   const [settings, setSettings] = useState<CarouselSettings>(getResponsiveSettings);
+  const [isInView, setIsInView] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -45,13 +47,26 @@ export const RingCarousel: React.FC<RingCarouselProps> = ({ memories, onSelectMe
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+      },
+      { rootMargin: '100px 0px', threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const {
     angle, activeCardIndex, isInteracting, mouseParallax, setIsHovered,
     rotateToCard, handlePointerDown, handlePointerMove, handlePointerUp, handleWheel,
-  } = useCarouselPhysics(memories.length, settings);
+  } = useCarouselPhysics(memories.length, settings, isInView);
 
   return (
-    <div style={{ position: 'relative', width: '100%', overflow: 'visible', userSelect: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: `${settings.cardWidth < 130 ? '12px' : '24px'} 0` }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', overflow: 'visible', userSelect: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: `${settings.cardWidth < 130 ? '12px' : '24px'} 0` }}>
       <CarouselStage
         cards={memories}
         settings={settings}

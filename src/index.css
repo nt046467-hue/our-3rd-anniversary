@@ -1644,31 +1644,12 @@ textarea {
   }
 }
 
-/* Mobile & Touch Polaroid Card Romantic Motion (No mouse hover needed!) */
+/* Touch/Tap interaction on Mobile for Full Album Cards */
 @media (pointer: coarse), (max-width: 800px) {
-  .full-album-overlay .polaroid-card {
-    animation: polaroidMobileFloat 4s ease-in-out infinite alternate !important;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-  }
-
   .full-album-overlay .polaroid-card:active {
-    transform: scale(0.95) rotate(var(--rot, 0deg)) !important;
-    box-shadow: 0 4px 14px rgba(168, 43, 62, 0.4) !important;
-  }
-}
-
-@keyframes polaroidMobileFloat {
-  0% {
-    transform: translateY(0px) rotate(var(--rot, 0deg));
-    box-shadow: 0 8px 20px -4px rgba(80, 50, 40, 0.16);
-  }
-  50% {
-    transform: translateY(-5px) rotate(calc(var(--rot, 0deg) + 1.2deg)) scale(1.015);
-    box-shadow: 0 14px 28px -4px rgba(168, 43, 62, 0.25), 0 0 14px rgba(255, 157, 180, 0.25);
-  }
-  100% {
-    transform: translateY(-7px) rotate(calc(var(--rot, 0deg) - 0.8deg)) scale(1.02);
-    box-shadow: 0 18px 34px -6px rgba(168, 43, 62, 0.3), 0 0 18px rgba(216, 193, 138, 0.25);
+    transform: scale(0.97) rotate(var(--rot, 0deg)) !important;
+    box-shadow: 0 4px 14px rgba(168, 43, 62, 0.3) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 }
 

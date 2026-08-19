@@ -5,6 +5,7 @@ import { soundFX } from './audio';
 export function useCarouselPhysics(
   totalCards: number,
   settings: CarouselSettings,
+  isEnabled: boolean = true,
   onActiveCardChange?: (index: number) => void
 ) {
   const [angle, setAngle] = useState(0);
@@ -47,6 +48,11 @@ export function useCarouselPhysics(
   const stepPrev = useCallback(() => rotateToCard(activeCardIndex - 1), [activeCardIndex, rotateToCard]);
 
   useEffect(() => {
+    if (!isEnabled) {
+      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      return;
+    }
+
     const loop = (now: number) => {
       const dt = Math.min((now - lastFrameTimeRef.current) / 1000, 0.1);
       lastFrameTimeRef.current = now;
@@ -92,7 +98,7 @@ export function useCarouselPhysics(
     lastFrameTimeRef.current = performance.now();
     animFrameIdRef.current = requestAnimationFrame(loop);
     return () => { if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current); };
-  }, [settings.autoRotate, settings.speed, settings.damping, settings.snapToNearest, stepAngle, totalCards, onActiveCardChange, rotateToCard]);
+  }, [isEnabled, settings.autoRotate, settings.speed, settings.damping, settings.snapToNearest, stepAngle, totalCards, onActiveCardChange, rotateToCard]);
 
   const handlePointerDown = useCallback((e: PointerEvent) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;

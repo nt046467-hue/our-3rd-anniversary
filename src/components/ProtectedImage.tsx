@@ -6,41 +6,16 @@ type ProtectedImageProps = {
   className?: string;
   style?: CSSProperties;
   onLoad?: () => void;
-  /**
-   * 'cover'   — fills a box you already give a fixed size (crops to fit). Use for spots
-   *             like the hero portrait where the frame shape is intentional.
-   * 'contain' — sizes the box itself to match the photo's real aspect ratio, like a plain
-   *             <img> with height:auto. Use for masonry grids / lightboxes so photos never
-   *             get squished or oddly cropped. This is the default.
-   */
   fit?: 'cover' | 'contain';
-  /** Only used with fit="contain": caps the box height (in vh), shrinking width to match. */
   maxHeightVh?: number;
-  /**
-   * Only used with fit="cover" (fixed-size box). When true, draws the photo the way CSS
-   * object-fit:contain would — the WHOLE photo scaled down to fit inside the fixed box,
-   * centered, nothing cropped — instead of the default cover-crop. Leaves the canvas
-   * transparent outside the photo, so pair it with a blurred cover copy behind it to avoid
-   * empty letterbox bars. Use for spots (like the carousel cards) where the box shape is
-   * fixed but no part of the photo should ever be cut off.
-   */
   letterbox?: boolean;
+  animateWatermark?: boolean;
 };
 
 // How often the floating watermark redraws while a photo is actually on screen.
-// 8fps is plenty smooth for a slow drifting label and is far cheaper than 60fps.
-const WATERMARK_REDRAW_MS = 120;
+const WATERMARK_REDRAW_MS = 150;
 
-/**
- * Canvas-based image renderer with invisible + floating watermarks.
- * - Draws the image onto a <canvas> so the raw src is never in an <img> tag
- * - Applies a static invisible watermark at 0.02 opacity (PRD #9)
- * - Renders a dynamic floating watermark at 0.04 opacity (PRD #10)
- * - Prevents drag, context menu, and selection
- * - Lazy-loads: only starts fetching the photo once it's about to scroll into view
- * - Pauses the watermark-redraw loop whenever the photo is off-screen
- */
-export default function ProtectedImage({ src, alt, className = '', style, onLoad, fit = 'contain', maxHeightVh, letterbox = false }: ProtectedImageProps) {
+export default function ProtectedImage({ src, alt, className = '', style, onLoad, fit = 'contain', maxHeightVh, letterbox = false, animateWatermark = false }: ProtectedImageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [shouldLoad, setShouldLoad] = useState(false);
@@ -153,25 +128,26 @@ export default function ProtectedImage({ src, alt, className = '', style, onLoad
     const container = containerRef.current;
     if (!container) return;
 
-    // Size canvas to container
-    const rect = container.getBoundingClientRect();
-    const displayWidth = rect.width || 400;
-    const displayHeight = rect.height || 300;
+    // Use un-transformed layout dimensions to ensure crystal-sharp canvas resolution
+    const displayWidth = Math.max(container.clientWidth || 0, container.offsetWidth || 0, Math.round(container.getBoundingClientRect().width) || 0, 400);
+    const displayHeight = Math.max(container.clientHeight || 0, container.offsetHeight || 0, Math.round(container.getBoundingClientRect().height) || 0, 320);
 
-    // Use device pixel ratio for sharp rendering
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = displayWidth * dpr;
-    canvas.height = displayHeight * dpr;
+    // Use high device pixel ratio (at least 2x-3x) so 3D scale-ups are pin-sharp
+    const dpr = Math.max(2.5, (window.devicePixelRatio || 1) * 1.5);
+    canvas.width = Math.round(displayWidth * dpr);
+    canvas.height = Math.round(displayHeight * dpr);
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.scale(dpr, dpr);
 
     const imgAspect = img.naturalWidth / img.naturalHeight;
     const canvasAspect = displayWidth / displayHeight;
 
-    if (letterbox) {
+    if (letterbox || fit === 'contain') {
       // Draw the WHOLE photo scaled to fit inside the fixed box (object-fit: contain
       // behavior) — nothing cropped. Leaves the rest of the canvas transparent.
       let dw = displayWidth, dh = displayHeight;
@@ -192,9 +168,9 @@ export default function ProtectedImage({ src, alt, className = '', style, onLoad
         sw = img.naturalHeight * canvasAspect;
         sx = (img.naturalWidth - sw) / 2;
       } else {
-        // Image is taller — crop top/bottom with intelligent upper-center bias (0.25) to keep faces visible
+        // Image is taller — anchor to TOP so heads/faces are visible
         sh = img.naturalWidth / canvasAspect;
-        sy = Math.max(0, (img.naturalHeight - sh) * 0.25);
+        sy = Math.max(0, (img.naturalHeight - sh) * 0.1);
       }
 
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, displayWidth, displayHeight);
@@ -245,9 +221,9 @@ export default function ProtectedImage({ src, alt, className = '', style, onLoad
     // effect below, throttled and only while the photo is actually on screen.
   };
 
-  // ─── Throttled watermark-drift loop — only runs while loaded AND on screen. ───
+  // ─── Throttled watermark-drift loop — only runs if animateWatermark is explicitly enabled, loaded AND on screen. ───
   useEffect(() => {
-    if (!loaded || !inViewport) {
+    if (!animateWatermark || !loaded || !inViewport) {
       if (intervalRef.current) {
         window.clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -262,7 +238,7 @@ export default function ProtectedImage({ src, alt, className = '', style, onLoad
         intervalRef.current = null;
       }
     };
-  }, [loaded, inViewport]);
+  }, [animateWatermark, loaded, inViewport]);
 
   // Redraw once on resize (layout change), independent of the drift loop
   useEffect(() => {

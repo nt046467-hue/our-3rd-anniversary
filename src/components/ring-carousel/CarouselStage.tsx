@@ -55,12 +55,12 @@ export const CarouselStage: React.FC<Props> = ({
       {settings.ambientGlow && (
         <div style={{
           position: 'absolute',
-          width: isMobile ? '320px' : '600px',
-          height: isMobile ? '180px' : '420px',
+          width: isMobile ? '300px' : '560px',
+          height: isMobile ? '160px' : '380px',
           borderRadius: '50%',
-          filter: `blur(${isMobile ? '100px' : '140px'})`, opacity: 0.25, pointerEvents: 'none',
+          filter: `blur(${isMobile ? '35px' : '80px'})`, opacity: isMobile ? 0.2 : 0.25, pointerEvents: 'none',
           background: 'radial-gradient(ellipse, #E4A6B1 0%, #D9B46B 60%, transparent 100%)',
-          transform: 'translateY(-10%)', zIndex: -1,
+          transform: 'translate3d(0, -10%, 0)', zIndex: -1,
         }} />
       )}
 

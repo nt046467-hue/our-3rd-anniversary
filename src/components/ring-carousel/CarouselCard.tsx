@@ -14,21 +14,19 @@ interface Props {
   onInspect?: (card: RingMemoryItem) => void;
 }
 
-export const CarouselCard: React.FC<Props> = ({
+export const CarouselCard: React.FC<Props> = React.memo(({
   card, index, totalCards, carouselAngle, settings, isActive, onSelect, onInspect,
 }) => {
   const [isTouched, setIsTouched] = useState(false);
   const isCompact = settings.cardWidth < 125;
 
   const stepAngle = 360 / Math.max(1, totalCards);
-  // Use a continuous angle to prevent 360-degree flip glitches during CSS transitions
   const continuousAngle = carouselAngle + index * stepAngle;
   const rad = (continuousAngle * Math.PI) / 180;
 
   const x = Math.sin(rad) * settings.radius;
   const z = Math.cos(rad) * settings.radius;
   const depthFactor = (1 - Math.cos(rad)) / 2;
-  const blurPx = 0;
   const scale = isTouched ? 1.06 : 1.0;
   const opacity = 1 - depthFactor * 0.35;
   const zIndex = Math.round((1 - depthFactor) * 1000) + (isTouched ? 100 : 0);
@@ -63,7 +61,7 @@ export const CarouselCard: React.FC<Props> = ({
         transformStyle: 'preserve-3d' as const,
         cursor: 'pointer', userSelect: 'none' as const,
         willChange: 'transform',
-        transition: 'transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease',
+        transition: 'box-shadow 0.2s ease',
       }}
     >
       {/* 3D Card Container with preserve-3d */}
@@ -80,22 +78,20 @@ export const CarouselCard: React.FC<Props> = ({
           backgroundImage: 'linear-gradient(135deg, #FFFFFF 0%, #FFF5F7 100%)',
           border: isActive || isTouched ? '1.5px solid #E4A6B1' : '1px solid #F2DFE2',
           boxShadow: isActive || isTouched
-            ? '0 20px 48px -6px rgba(168, 43, 62, 0.4), 0 8px 24px rgba(228, 166, 177, 0.3)'
-            : '0 12px 30px -8px rgba(168, 43, 62, 0.15), 0 4px 12px rgba(0,0,0,0.04)',
+            ? '0 16px 36px -6px rgba(168, 43, 62, 0.35), 0 6px 16px rgba(228, 166, 177, 0.25)'
+            : '0 8px 20px -6px rgba(168, 43, 62, 0.12), 0 2px 8px rgba(0,0,0,0.03)',
           backfaceVisibility: 'hidden' as const,
           WebkitBackfaceVisibility: 'hidden' as const,
           opacity,
-          filter: blurPx > 0.4 ? `blur(${blurPx.toFixed(1)}px)` : 'none',
-          transition: 'all 0.25s ease',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         }}>
           {/* Tape strip */}
           <div style={{
             position: 'absolute', top: '-4px', left: '50%', transform: 'translateX(-50%) rotate(-2deg)',
             width: isCompact ? '34px' : '45px', height: isCompact ? '11px' : '14px', 
-            background: 'rgba(242, 200, 205, 0.65)',
-            border: '1px solid rgba(255, 255, 255, 0.5)',
+            background: 'rgba(242, 200, 205, 0.75)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
             boxShadow: '0 2px 4px rgba(168, 43, 62, 0.08)',
-            backdropFilter: 'blur(2px)',
             borderRadius: '2px', zIndex: 10, pointerEvents: 'none' as const,
           }} />
 
@@ -107,8 +103,8 @@ export const CarouselCard: React.FC<Props> = ({
           }}>
             {card.type === 'video' ? (
               <>
-                <ProtectedVideo src={card.src} muted loop playsInline preload="metadata"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                <ProtectedVideo src={card.src} muted loop playsInline preload="none"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
                   onMouseLeave={(e) => { const v = e.target as HTMLVideoElement; v.pause(); v.currentTime = 0; }}
                 />
@@ -124,14 +120,9 @@ export const CarouselCard: React.FC<Props> = ({
                 </div>
               </>
             ) : (
-              <>
-                <ProtectedImage src={card.src} alt="" fit="cover" aria-hidden="true"
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(18px) brightness(0.9)', transform: 'scale(1.15)' }}
-                />
-                <ProtectedImage src={card.src} alt={card.caption} fit="cover" letterbox
-                  style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'contain' }}
-                />
-              </>
+              <ProtectedImage src={card.src} alt={card.caption} fit="cover"
+                style={{ width: '100%', height: '100%' }}
+              />
             )}
           </div>
 
@@ -186,23 +177,21 @@ export const CarouselCard: React.FC<Props> = ({
           backgroundImage: 'linear-gradient(135deg, #FFFFFF 0%, #FFF5F7 100%)',
           border: isActive || isTouched ? '1.5px solid #E4A6B1' : '1px solid #F2DFE2',
           boxShadow: isActive || isTouched
-            ? '0 20px 48px -6px rgba(168, 43, 62, 0.4), 0 8px 24px rgba(228, 166, 177, 0.3)'
-            : '0 12px 30px -8px rgba(168, 43, 62, 0.15), 0 4px 12px rgba(0,0,0,0.04)',
+            ? '0 16px 36px -6px rgba(168, 43, 62, 0.35), 0 6px 16px rgba(228, 166, 177, 0.25)'
+            : '0 8px 20px -6px rgba(168, 43, 62, 0.12), 0 2px 8px rgba(0,0,0,0.03)',
           transform: 'rotateY(180deg)',
           backfaceVisibility: 'hidden' as const,
           WebkitBackfaceVisibility: 'hidden' as const,
           opacity,
-          filter: blurPx > 0.4 ? `blur(${blurPx.toFixed(1)}px)` : 'none',
-          transition: 'all 0.25s ease',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         }}>
           {/* Tape strip */}
           <div style={{
             position: 'absolute', top: '-4px', left: '50%', transform: 'translateX(-50%) rotate(-2deg)',
             width: isCompact ? '34px' : '45px', height: isCompact ? '11px' : '14px', 
-            background: 'rgba(242, 200, 205, 0.65)',
-            border: '1px solid rgba(255, 255, 255, 0.5)',
+            background: 'rgba(242, 200, 205, 0.75)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
             boxShadow: '0 2px 4px rgba(168, 43, 62, 0.08)',
-            backdropFilter: 'blur(2px)',
             borderRadius: '2px', zIndex: 10, pointerEvents: 'none' as const,
           }} />
 
@@ -214,8 +203,8 @@ export const CarouselCard: React.FC<Props> = ({
           }}>
             {card.type === 'video' ? (
               <>
-                <ProtectedVideo src={card.src} muted loop playsInline preload="metadata"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                <ProtectedVideo src={card.src} muted loop playsInline preload="none"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
                 <div style={{
                   position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.15)',
@@ -229,14 +218,9 @@ export const CarouselCard: React.FC<Props> = ({
                 </div>
               </>
             ) : (
-              <>
-                <ProtectedImage src={card.src} alt="" fit="cover" aria-hidden="true"
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(18px) brightness(0.9)', transform: 'scale(1.15)' }}
-                />
-                <ProtectedImage src={card.src} alt={card.caption} fit="cover" letterbox
-                  style={{ position: 'relative', width: '100%', height: '100%', objectFit: 'contain' }}
-                />
-              </>
+              <ProtectedImage src={card.src} alt={card.caption} fit="cover"
+                style={{ width: '100%', height: '100%' }}
+              />
             )}
           </div>
 
@@ -284,4 +268,4 @@ export const CarouselCard: React.FC<Props> = ({
       </div>
     </div>
   );
-};
+});
